@@ -217,11 +217,12 @@ class EmailService:
                 url = "https://send.api.mailtrap.io/api/send"
                 headers = {
                     "Authorization": f"Bearer {mailtrap_token}",
+                    "Api-Token": mailtrap_token,
                     "Content-Type": "application/json",
                 }
-                from_email = getattr(Config, "EMAIL_FROM", "") or "mailtrap@demomailtrap.com"
-                if "demomailtrap.com" not in from_email and "mailtrap" not in from_email:
-                    from_email = "mailtrap@demomailtrap.com"
+                from_email = getattr(Config, "EMAIL_FROM", "") or "mailtrap@demomailtrap.co"
+                if "demomailtrap" not in from_email:
+                    from_email = "mailtrap@demomailtrap.co"
 
                 payload = {
                     "from": {"email": from_email, "name": "Spendwise"},
