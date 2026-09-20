@@ -36,6 +36,11 @@ class Config:
     FLASK_HOST = os.getenv("FLASK_HOST", "0.0.0.0")
 
     # Email Settings
+    MAILTRAP_TOKEN = os.getenv("MAILTRAP_TOKEN", "")
+    MAILJET_API_KEY = os.getenv("MAILJET_API_KEY", "")
+    MAILJET_SECRET_KEY = os.getenv("MAILJET_SECRET_KEY", "")
+    SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
+    BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
     RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
     SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
     SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
@@ -46,9 +51,16 @@ class Config:
     @classmethod
     def is_smtp_configured(cls) -> bool:
         """
-        Check if email service credentials (Resend API Key or SMTP credentials) are provided.
+        Check if email service credentials (Mailtrap, Mailjet, SendGrid, Brevo, Resend, or SMTP) are provided.
 
         Returns:
-            bool: True if RESEND_API_KEY or (SMTP_USER and SMTP_PASSWORD) are set.
+            bool: True if any email provider credential is set.
         """
-        return bool(cls.RESEND_API_KEY or (cls.SMTP_USER and cls.SMTP_PASSWORD))
+        return bool(
+            cls.MAILTRAP_TOKEN
+            or cls.MAILJET_API_KEY
+            or cls.SENDGRID_API_KEY
+            or cls.BREVO_API_KEY
+            or cls.RESEND_API_KEY
+            or (cls.SMTP_USER and cls.SMTP_PASSWORD)
+        )
