@@ -5,6 +5,7 @@ Generates HTML & Plaintext financial summary emails (daily, weekly, monthly)
 and dispatches them via SMTP or returns mock preview data.
 """
 
+import os
 import smtplib
 import logging
 from email.mime.multipart import MIMEMultipart
@@ -207,17 +208,20 @@ class EmailService:
             }, None
 
         # 1. Attempt HTTPS Delivery via Resend API if API Key is configured
-        if Config.RESEND_API_KEY:
+        resend_key = getattr(Config, "RESEND_API_KEY", "") or os.getenv("RESEND_API_KEY", "")
+        if resend_key:
             try:
                 import json
                 import urllib.request
 
                 url = "https://api.resend.com/emails"
                 headers = {
-                    "Authorization": f"Bearer {Config.RESEND_API_KEY}",
+                    "Authorization": f"Bearer {resend_key}",
                     "Content-Type": "application/json",
                 }
-                from_email = Config.EMAIL_FROM if "resend" in Config.EMAIL_FROM.lower() or "onboarding@resend.dev" in Config.EMAIL_FROM else "Spendwise <onboarding@resend.dev>"
+                from_email = getattr(Config, "EMAIL_FROM", "") or "Spendwise <onboarding@resend.dev>"
+                if "resend" not in from_email.lower() and "onboarding@resend.dev" not in from_email:
+                    from_email = "Spendwise <onboarding@resend.dev>"
                 payload = {
                     "from": from_email,
                     "to": [to_email],
