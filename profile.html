@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your profile – Spendwise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<script src="assets/api.js"></script>
+<script src="assets/common.js"></script>
+<style>
+  .items-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-top: 2rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .items-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .items-head h2 { margin: 0; font-size: 1.25rem; font-family: var(--font-display); }
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+  }
+  .items-table th, .items-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .items-table th { color: var(--text-muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
+  .badge-buffer {
+    display: inline-block;
+    background: rgba(255, 201, 60, 0.2);
+    color: #b7791f;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .btn-email, .btn-edit, .btn-delete {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 99px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+  .btn-email { background: var(--violet); color: #fff; }
+  .btn-edit { background: var(--bg2); color: var(--ink); border: 1px solid var(--line); }
+  .btn-delete { background: rgba(255, 100, 116, 0.15); color: #e53e3e; border: 1px solid rgba(255, 100, 116, 0.3); }
+  .btn-email:hover, .btn-edit:hover, .btn-delete:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  .profile-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-left: auto;
+    flex-wrap: wrap;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
+    display: grid;
+    place-items: center;
+    z-index: 999;
+    padding: 1rem;
+  }
+  .modal-card {
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 16px;
+    padding: 1.8rem;
+    width: min(520px, 100%);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    border: 1px solid var(--border, rgba(255,255,255,0.1));
+  }
+  .modal-card h2 { margin-bottom: 0.4rem; font-size: 1.4rem; font-family: var(--font-display); }
+  .modal-card .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 1rem; }
+  .modal-card .form-field { display: flex; flex-direction: column; gap: 0.3rem; }
+  .modal-card label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+  .modal-card input, .modal-card select {
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--ink);
+    font: inherit;
+  }
+  .modal-actions { display: flex; gap: 0.8rem; justify-content: flex-end; margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="index.html"><span class="mark">$</span>Spendwise</a>
+    <div class="actions push">
+      <button class="icon-btn" data-theme-toggle aria-label="Switch between light and dark theme"><span class="sunny">☀</span><span class="moon">☾</span></button>
+      <a class="btn btn-line btn-sm" href="index.html" data-logout>Log out</a>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="wrap" id="content" hidden>
+    <div class="who">
+      <div class="avatar-lg" id="avatar"></div>
+      <div>
+        <h1 id="hello"></h1>
+        <p id="sub"></p>
+      </div>
+      <div class="profile-actions-bar">
+        <button type="button" class="btn-edit" id="editProfileBtn">
+          <span>✏️ Edit Profile</span>
+        </button>
+        <button type="button" class="btn-delete" id="deleteProfileBtn">
+          <span>🗑️ Delete Profile</span>
+        </button>
+        <button type="button" class="btn-email" id="emailReportBtn">
+          <span>📧 Send Email Report</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="pf-grid">
+      <div class="wallet">
+        <div class="card-scene" id="wallet">
+          <div class="card-3d">
+            <div class="card-layer" style="--z:0px;left:0;top:0">
+              <div class="bank">
+                <div class="bank-top"><span class="mark">$</span>Spendwise</div>
+                <div class="bank-bal"><small>Main balance</small><strong id="cardBal">–</strong></div>
+                <div class="bank-foot"><span id="cardUser"></span><span id="cardName"></span></div>
+              </div>
+            </div>
+            <div class="card-layer" style="--z:80px;right:-44px;top:-30px"><div class="float"><div class="chip"><span id="chipLimitLabel">Limit left</span> <b id="chipLimit"></b></div></div></div>
+            <div class="card-layer" style="--z:56px;left:-40px;bottom:-26px"><div class="float" style="--d:-2s"><div class="chip">Buffer <b id="chipBuffer"></b></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <section class="details" aria-labelledby="dt">
+          <h2 id="dt">Your details</h2>
+          <dl>
+            <div class="dr"><dt>Username</dt><dd id="d-username"></dd></div>
+            <div class="dr"><dt>Full name</dt><dd id="d-name"></dd></div>
+            <div class="dr"><dt>Email</dt><dd id="d-email"></dd></div>
+            <div class="dr"><dt>Balance</dt><dd id="d-balance"></dd></div>
+            <div class="dr"><dt>Buffer Total</dt><dd id="d-buffer"></dd></div>
+            <div class="dr"><dt>Buffer Used</dt><dd id="d-buffer-used" style="color:var(--coral)"></dd></div>
+            <div class="dr"><dt>Limit Period</dt><dd id="d-period"></dd></div>
+            <div class="dr"><dt>Limit Base</dt><dd id="d-limit"></dd></div>
+            <div class="dr hl" style="background:rgba(31,203,147,0.12);border-radius:8px;padding:6px 10px;margin:4px 0"><dt style="color:var(--mint);font-weight:700">Limit Remaining</dt><dd id="d-limit-remaining" style="color:var(--mint);font-weight:800;font-size:1.1rem"></dd></div>
+            <div class="dr"><dt>Rollover Added</dt><dd id="d-rollover" style="color:var(--mint)"></dd></div>
+            <div class="dr hl"><dt>Available to spend</dt><dd id="d-avail"></dd></div>
+          </dl>
+        </section>
+
+        <div class="buy-cta">
+          <div>
+            <h2>Thinking about buying something?</h2>
+            <p>Check it against your limit and balance before you spend.</p>
+          </div>
+          <a class="btn btn-sun btn-lg" href="buy.html">Want to buy?</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Items Section: User's purchases stored in DB -->
+    <div class="items-card">
+      <div class="items-head">
+        <h2>Your Items & Purchases (Database History)</h2>
+        <span id="itemsCount" style="color:var(--text-muted);font-size:0.9rem">0 items</span>
+      </div>
+      <div id="itemsContainer">
+        <p style="color:var(--text-muted)">Loading your items history…</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Edit Profile Modal Overlay -->
+<div class="modal-overlay" id="editModal" hidden>
+  <div class="modal-card">
+    <h2>Edit Profile Details</h2>
+    <p style="color:var(--muted);font-size:0.85rem">Update your parameters. Rules: Buffer and Limit Base must not exceed your Main Balance.</p>
+    <form id="editProfileForm">
+      <div class="form-grid">
+        <div class="form-field" style="grid-column: span 2">
+          <label for="edit_full_name">Full Name</label>
+          <input type="text" id="edit_full_name" required>
+        </div>
+        <div class="form-field" style="grid-column: span 2">
+          <label for="edit_email">Email Address</label>
+          <input type="email" id="edit_email" required>
+        </div>
+        <div class="form-field">
+          <label for="edit_balance">Main Balance ($)</label>
+          <input type="number" id="edit_balance" step="0.01" min="0" required>
+        </div>
+        <div class="form-field">
+          <label for="edit_buffer">Buffer Total ($)</label>
+          <input type="number" id="edit_buffer" step="0.01" min="0" required>
+        </div>
+        <div class="form-field">
+          <label for="edit_limit_period">Limit Period</label>
+          <select id="edit_limit_period" required>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="edit_limit_balance">Limit Base ($)</label>
+          <input type="number" id="edit_limit_balance" step="0.01" min="0.01" required>
+        </div>
+      </div>
+      <div id="editError" style="color:var(--coral);font-size:0.85rem;margin-top:0.8rem;font-weight:600" hidden></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-line" id="closeEditModal">Cancel</button>
+        <button type="submit" class="btn btn-violet" id="saveProfileBtn">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Account Modal Overlay -->
+<div class="modal-overlay" id="deleteModal" hidden>
+  <div class="modal-card" style="border-color:rgba(255, 100, 116, 0.4)">
+    <h2 style="color:var(--coral)">Delete Account Permanently?</h2>
+    <p style="color:var(--muted);font-size:0.88rem;margin-top:0.4rem;line-height:1.5">
+      Are you sure you want to delete your profile <strong style="color:var(--ink)">@<span id="delUsername"></span></strong>?
+      This will permanently remove your user document, hashed balance, and all spending item history from <strong>MongoDB Atlas</strong>.
+    </p>
+    <p style="color:var(--coral);font-weight:700;font-size:0.85rem;margin-top:0.8rem">⚠️ This action cannot be undone.</p>
+    <div id="deleteError" style="color:var(--coral);font-size:0.85rem;margin-top:0.8rem;font-weight:600" hidden></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-line" id="closeDeleteModal">Cancel</button>
+      <button type="button" class="btn btn-coral" id="confirmDeleteBtn" style="background:var(--coral);color:#fff;border:none">Yes, Delete My Account</button>
+    </div>
+  </div>
+</div>
+
+<script>
+SW.requireLogin().then(function (u) {
+  var $ = function (id) { return document.getElementById(id); };
+  var period = SW.cap(u.limit_period);
+  var available = Math.round((u.balance - u.buffer) * 100) / 100;
+
+  $('avatar').textContent = SW.initials(u.full_name);
+  $('hello').textContent = 'Hi, ' + u.full_name.split(' ')[0];
+  $('sub').textContent = '@' + u.username + ' · ' + u.email;
+
+  $('cardUser').textContent = '@' + u.username;
+  $('cardName').textContent = u.full_name;
+  $('chipLimitLabel').textContent = period + ' limit left';
+  $('chipLimit').textContent = SW.money(u.limit_remaining);
+  $('chipBuffer').textContent = SW.money(u.buffer);
+
+  $('d-username').textContent = u.username;
+  $('d-name').textContent = u.full_name;
+  $('d-email').textContent = u.email;
+  $('d-balance').textContent = SW.money(u.balance);
+  $('d-buffer').textContent = SW.money(u.buffer);
+  $('d-buffer-used').textContent = SW.money(u.buffer_used || 0);
+  $('d-period').textContent = period;
+  $('d-limit').textContent = SW.money(u.limit_balance) + ' / ' + u.limit_period;
+  $('d-limit-remaining').textContent = SW.money(u.limit_remaining != null ? u.limit_remaining : u.limit_balance);
+  $('d-rollover').textContent = '+' + SW.money(u.leftover_rollover || 0);
+  $('d-avail').textContent = SW.money(u.available != null ? u.available : available);
+
+  $('content').hidden = false;
+  SW.countUp($('cardBal'), u.balance, 1000);
+  SW.tilt($('wallet'), $('wallet').firstElementChild, { baseY: -14, baseX: 8, rangeY: 26, rangeX: 16 });
+
+  /* Render items section from database */
+  SWApi.getItems().then(function (items) {
+    $('itemsCount').textContent = items.length + ' item' + (items.length === 1 ? '' : 's');
+    if (!items || items.length === 0) {
+      $('itemsContainer').innerHTML = '<p style="color:var(--text-muted);font-style:italic">No items added yet. Click "Want to buy?" to check and add items!</p>';
+      return;
+    }
+    var html = '<table class="items-table"><thead><tr><th>Item</th><th>Date</th><th style="text-align:right">Price</th></tr></thead><tbody>';
+    items.forEach(function (it) {
+      var dateStr = it.created_at ? new Date(it.created_at).toLocaleDateString() : 'Recent';
+      var badge = it.used_emergency_buffer ? ' <span class="badge-buffer">Buffer Used</span>' : '';
+      html += '<tr><td><strong>' + SW.esc(it.item) + '</strong>' + badge + '</td><td>' + dateStr + '</td><td style="text-align:right;font-weight:700">' + SW.money(it.price) + '</td></tr>';
+    });
+    html += '</tbody>mtable>';
+    $('itemsContainer').innerHTML = html;
+  });
+
+  /* Edit Profile Modal Handling */
+  $('editProfileBtn').addEventListener('click', function () {
+    $('edit_full_name').value = u.full_name;
+    $('edit_email').value = u.email;
+    $('edit_balance').value = u.balance;
+    $('edit_buffer').value = u.buffer;
+    $('edit_limit_period').value = u.limit_period;
+    $('edit_limit_balance').value = u.limit_balance;
+    $('editError').hidden = true;
+    $('editModal').hidden = false;
+  });
+
+  $('closeEditModal').addEventListener('click', function () {
+    $('editModal').hidden = true;
+  });
+
+  $('editProfileForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    $('editError').hidden = true;
+
+    var bal = parseFloat($('edit_balance').value);
+    var buf = parseFloat($('edit_buffer').value);
+    var lim = parseFloat($('edit_limit_balance').value);
+
+    // Natural Restrictions Validation
+    if (buf > bal) {
+      $('editError').textContent = 'Error: Buffer ($' + buf + ') cannot exceed main balance ($' + bal + ').';
+      $('editError').hidden = false;
+      return;
+    }
+    if (lim > bal) {
+      $('editError').textContent = 'Error: Limit balance ($' + lim + ') cannot exceed main balance ($' + bal + ').';
+      $('editError').hidden = false;
+      return;
+    }
+
+    var payload = {
+      full_name: $('edit_full_name').value.trim(),
+      email: $('edit_email').value.trim(),
+      balance: bal,
+      buffer: buf,
+      limit_period: $('edit_limit_period').value,
+      limit_balance: lim
+    };
+
+    var btn = $('saveProfileBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    SWApi.updateProfile(payload).then(function () {
+      SW.toast('Profile updated successfully!');
+      $('editModal').hidden = true;
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+      window.location.reload();
+    }).catch(function (err) {
+      $('editError').textContent = 'Error: ' + err.message;
+      $('editError').hidden = false;
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+    });
+  });
+
+  /* Delete Profile Modal Handling */
+  $('deleteProfileBtn').addEventListener('click', function () {
+    $('delUsername').textContent = u.username;
+    $('deleteError').hidden = true;
+    $('deleteModal').hidden = false;
+  });
+
+  $('closeDeleteModal').addEventListener('click', function () {
+    $('deleteModal').hidden = true;
+  });
+
+  $('confirmDeleteBtn').addEventListener('click', function () {
+    var btn = $('confirmDeleteBtn');
+    btn.disabled = true;
+    btn.textContent = 'Deleting from database…';
+
+    SWApi.deleteProfile().then(function () {
+      SW.toast('Account and all data deleted permanently.');
+      setTimeout(function () { window.location.href = 'index.html'; }, 600);
+    }).catch(function (err) {
+      $('deleteError').textContent = 'Error: ' + err.message;
+      $('deleteError').hidden = false;
+      btn.disabled = false;
+      btn.textContent = 'Yes, Delete My Account';
+    });
+  });
+
+  /* Trigger Email Report Button */
+  $('emailReportBtn').addEventListener('click', function () {
+    var btn = $('emailReportBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳ Sending Email Report…</span>';
+    SWApi.sendReport().then(function (res) {
+      SW.toast(res.message || 'Report sent to ' + u.email + '!');
+      btn.disabled = false;
+      btn.innerHTML = '<span>📧 Send Email Report</span>';
+    }).catch(function (err) {
+      SW.toast('Report error: ' + err.message);
+      btn.disabled = false;
+      btn.innerHTML = '<span>📧 Send Email Report</span>';
+    });
+  });
+});
+</script>
+</body>
+</html>

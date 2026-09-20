@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create an account – Spendwise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/api.js"></script>
+<script src="assets/common.js"></script>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="index.html"><span class="mark">$</span>Spendwise</a>
+    <div class="actions push">
+      <button class="icon-btn" data-theme-toggle aria-label="Switch between light and dark theme"><span class="sunny">☀</span><span class="moon">☾</span></button>
+      <a class="btn btn-line btn-sm" href="login.html">Log in</a>
+    </div>
+  </div>
+</header>
+
+<main class="auth">
+  <aside class="auth-art" aria-hidden="true">
+    <div>
+      <h2>Set your limits once. Spend with confidence.</h2>
+      <p>Your buffer stays untouched and your limit keeps each period in check.</p>
+    </div>
+    <div class="card-scene" data-art></div>
+  </aside>
+
+  <section class="auth-form">
+    <div class="form-card">
+      <h1>Create an account</h1>
+      <p class="sub">All fields are required. It takes about a minute.</p>
+
+      <div class="banner" id="banner" role="alert" hidden></div>
+
+      <form id="signupForm" class="stack" novalidate>
+        <div class="two">
+          <div class="field">
+            <label for="username">Username</label>
+            <input class="input" id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="alex_m">
+            <span class="msg"></span>
+          </div>
+          <div class="field">
+            <label for="full_name">Full name</label>
+            <input class="input" id="full_name" name="full_name" type="text" autocomplete="name" placeholder="Alex Morgan">
+            <span class="msg"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input class="input" id="email" name="email" type="email" autocomplete="email" placeholder="alex@example.com">
+          <span class="msg"></span>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="pw">
+            <input class="input" id="password" name="password" type="password" autocomplete="new-password">
+            <button type="button" data-pw-toggle aria-pressed="false">Show</button>
+          </div>
+          <span class="hint">At least 6 characters. You'll use it with your username to log in.</span>
+          <span class="msg"></span>
+        </div>
+
+        <div class="legend">Your money<small>Spendwise uses these numbers to decide whether you can afford something.</small></div>
+
+        <div class="two">
+          <div class="field">
+            <label for="balance">Balance</label>
+            <div class="money"><span data-cur>$</span><input class="input" id="balance" name="balance" type="number" inputmode="decimal" min="0" step="0.01" placeholder="2,480.00"></div>
+            <span class="hint">What you have right now.</span>
+            <span class="msg"></span>
+          </div>
+          <div class="field">
+            <label for="buffer">Buffer</label>
+            <div class="money"><span data-cur>$</span><input class="input" id="buffer" name="buffer" type="number" inputmode="decimal" min="0" step="0.01" placeholder="500.00"></div>
+            <span class="hint">Money to keep untouched.</span>
+            <span class="msg"></span>
+          </div>
+        </div>
+
+        <div class="two">
+          <div class="field">
+            <label for="limit_period">Limit period</label>
+            <select class="input" id="limit_period" name="limit_period">
+              <option value="" selected disabled>Choose…</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+            <span class="hint">How often your limit resets.</span>
+            <span class="msg"></span>
+          </div>
+          <div class="field">
+            <label for="limit_balance" id="limitLabel">Limit balance</label>
+            <div class="money"><span data-cur>$</span><input class="input" id="limit_balance" name="limit_balance" type="number" inputmode="decimal" min="0" step="0.01" placeholder="60.00"></div>
+            <span class="hint" id="limitHint">The most you plan to spend per period.</span>
+            <span class="msg"></span>
+          </div>
+        </div>
+
+        <button class="btn btn-violet btn-lg block" id="submit" type="submit">Create an account</button>
+      </form>
+
+      <div class="or">Already have an account?</div>
+      <a class="btn btn-line block" href="login.html">Log in</a>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var form = document.getElementById('signupForm');
+  var banner = document.getElementById('banner');
+  var btn = document.getElementById('submit');
+  var EMPTY = 'This field is required.';
+
+  /* One rule per field. Return an error message, or '' when valid. */
+  var rules = {
+    username: function (v) {
+      if (!v) return EMPTY;
+      return /^[A-Za-z0-9_.]{3,20}$/.test(v) ? '' : 'Use 3–20 letters, numbers, dots or underscores.';
+    },
+    full_name: function (v) { return !v ? EMPTY : v.length < 2 ? 'Enter your full name.' : ''; },
+    email: function (v) {
+      if (!v) return EMPTY;
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? '' : 'Enter a valid email address.';
+    },
+    password: function (v) { return !v ? EMPTY : v.length < 6 ? 'Use at least 6 characters.' : ''; },
+    balance: function (v) {
+      if (v === '') return EMPTY;
+      return Number(v) >= 0 ? '' : 'Balance can\'t be negative.';
+    },
+    buffer: function (v) {
+      if (v === '') return EMPTY;
+      if (!(Number(v) >= 0)) return 'Buffer can\'t be negative.';
+      var bal = form.balance.value;
+      return bal !== '' && Number(v) > Number(bal) ? 'Buffer can\'t be more than your balance.' : '';
+    },
+    limit_period: function (v) { return v ? '' : 'Choose how often your limit resets.'; },
+    limit_balance: function (v) {
+      if (v === '') return EMPTY;
+      return Number(v) > 0 ? '' : 'Enter a limit above 0.';
+    }
+  };
+
+  function value(name) {
+    var el = form.elements[name];
+    return name === 'password' || name === 'limit_period' ? el.value : el.value.trim();
+  }
+  function show(name, text) {
+    var field = form.elements[name].closest('.field');
+    field.classList.toggle('err', !!text);
+    field.querySelector('.msg').textContent = text || '';
+    return !text;
+  }
+  function check(name) { return show(name, rules[name](value(name))); }
+
+  Object.keys(rules).forEach(function (name) {
+    var el = form.elements[name];
+    el.addEventListener('blur', function () { if (value(name) !== '') check(name); });
+    el.addEventListener('input', function () {
+      banner.hidden = true;
+      if (el.closest('.field').classList.contains('err')) check(name);
+      if (name === 'balance' && value('buffer') !== '') check('buffer');
+    });
+  });
+
+  /* Limit label follows the chosen period */
+  var period = form.limit_period;
+  period.addEventListener('change', function () {
+    var p = period.value, label = p.charAt(0).toUpperCase() + p.slice(1);
+    document.getElementById('limitLabel').textContent = label + ' limit balance';
+    document.getElementById('limitHint').textContent = 'The most you plan to spend each ' + { daily: 'day', weekly: 'week', monthly: 'month' }[p] + '.';
+    if (form.limit_period.closest('.field').classList.contains('err')) check('limit_period');
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    banner.hidden = true;
+    var firstBad = null;
+    Object.keys(rules).forEach(function (name) {
+      if (!check(name) && !firstBad) firstBad = name;
+    });
+    if (firstBad) { form.elements[firstBad].focus(); return; }
+
+    var data = {
+      username: value('username'), full_name: value('full_name'), email: value('email'), password: value('password'),
+      balance: parseFloat(value('balance')), buffer: parseFloat(value('buffer')),
+      limit_period: value('limit_period'), limit_balance: parseFloat(value('limit_balance'))
+    };
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span> Creating your account…';
+    SWApi.register(data).then(function () {
+      SW.toast('Account created. Welcome!');
+      setTimeout(function () { window.location.href = 'profile.html'; }, 700);
+    }).catch(function (err) {
+      if (err.field && form.elements[err.field]) { show(err.field, err.message); form.elements[err.field].focus(); }
+      else { banner.textContent = err.message; banner.hidden = false; }
+      btn.disabled = false;
+      btn.textContent = 'Create an account';
+    });
+  });
+})();
+</script>
+</body>
+</html>

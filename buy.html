@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check a purchase – Spendwise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<script src="assets/api.js"></script>
+<script src="assets/common.js"></script>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="index.html"><span class="mark">$</span>Spendwise</a>
+    <div class="actions push">
+      <button class="icon-btn" data-theme-toggle aria-label="Switch between light and dark theme"><span class="sunny">☀</span><span class="moon">☾</span></button>
+      <a class="btn btn-line btn-sm" href="index.html" data-logout>Log out</a>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="wrap">
+    <a class="back" href="profile.html">← Back to profile</a>
+
+    <div class="buy-head">
+      <h1>Can you afford it?</h1>
+      <p>Tell us what you want and what it costs. We'll compare it with your limit and your balance.</p>
+    </div>
+
+    <div class="buy-grid">
+      <form class="panel stack" id="buyForm" novalidate>
+        <div class="field">
+          <label for="item">Item</label>
+          <input class="input" id="item" name="item" type="text" placeholder="Running shoes" autocomplete="off">
+          <span class="msg"></span>
+        </div>
+        <div class="field">
+          <label for="price">Price</label>
+          <div class="money"><span data-cur>$</span><input class="input" id="price" name="price" type="number" inputmode="decimal" min="0" step="0.01" placeholder="89.90"></div>
+          <span class="msg"></span>
+        </div>
+        <div class="banner" id="banner" role="alert" hidden></div>
+        <button class="btn btn-violet btn-lg block" id="check" type="submit">Check balance</button>
+      </form>
+
+      <div id="result" aria-live="polite">
+        <div class="ph">
+          <div class="big">🛍️</div>
+          <b>Your answer shows up here</b>
+          <span>Add an item and its price, then tap Check balance.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+SW.requireLogin().then(function () {
+  var form = document.getElementById('buyForm');
+  var out = document.getElementById('result');
+  var btn = document.getElementById('check');
+  var banner = document.getElementById('banner');
+
+  function fieldError(id, text) {
+    var f = document.getElementById(id).closest('.field');
+    f.classList.toggle('err', !!text);
+    f.querySelector('.msg').textContent = text || '';
+    return !text;
+  }
+  ['item', 'price'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', function () { fieldError(id, ''); banner.hidden = true; });
+  });
+
+  function meter(label, amount, max, color) {
+    return '<div class="meter"><span>' + label + '</span><div class="tr"><i style="--w:' + Math.max(2, Math.round(Math.max(0, amount) / max * 100)) +
+      '%;background:' + color + '"></i></div><b>' + SW.money(Math.max(0, amount)) + '</b></div>';
+  }
+
+  function render(r) {
+    var good = r.decision === 'buy' || r.decision === 'emergency_buy';
+    var isEmergency = r.decision === 'emergency_buy';
+    var item = '<b>' + SW.esc(r.item) + '</b>';
+    var period = r.limit_period;
+    var html;
+
+    var meters = '<div class="meters" aria-label="Price compared with limit and spendable balance">' +
+      meter('Item price', r.price, Math.max(r.price, r.limit_remaining, r.available, 1), good ? 'var(--violet)' : 'var(--coral)') +
+      meter('Limit left', r.limit_remaining, Math.max(r.price, r.limit_remaining, r.available, 1), (r.reasons && r.reasons.indexOf('limit') > -1) ? 'var(--sun)' : 'var(--mint)') +
+      meter('Can spend', r.available, Math.max(r.price, r.limit_remaining, r.available, 1), (r.reasons && (r.reasons.indexOf('balance') > -1 || r.reasons.indexOf('buffer') > -1)) ? 'var(--sun)' : 'var(--mint)') +
+      '</div>';
+
+    var current = '<div class="cur">' +
+      '<div><small>Current ' + period + ' limit</small><b data-count="' + r.limit_remaining + '">' + SW.money(0) + '</b></div>' +
+      '<div><small>Main balance</small><b data-count="' + r.balance + '">' + SW.money(0) + '</b></div></div>';
+
+    if (good) {
+      var headline = isEmergency ? 'Covered by Emergency Buffer! 🛡️' : 'You\'re good to buy!';
+      var explanation = isEmergency
+        ? item + ' costs ' + SW.money(r.price) + '. It exceeds your limit left (' + SW.money(r.limit_remaining) + '), but your emergency buffer covers the ' + SW.money(r.buffer_amount_needed) + ' deficit!'
+        : item + ' costs ' + SW.money(r.price) + '. That fits inside your ' + period + ' limit and leaves your buffer untouched.';
+
+      html = '<div class="res good">' +
+        '<div class="res-icon"><svg viewBox="0 0 52 52" aria-hidden="true"><path class="t" d="M13 27l9 9 17-19"/></svg></div>' +
+        '<h2>' + headline + '</h2>' +
+        '<p class="why">' + explanation + '</p>' +
+        current + meters +
+        '<p class="after">After buying: ' + SW.money(Math.max(0, r.limit_remaining - r.price)) + ' left in your ' + period + ' limit and ' + SW.money(r.balance - r.price) + ' in your balance.</p>' +
+        '<div class="res-actions">' +
+          '<button class="btn btn-sun btn-lg" type="button" id="confirmBuyBtn">🛍️ Add Item to Profile & Database</button>' +
+          '<button class="btn btn-violet" type="button" data-again>Check another item</button>' +
+        '</div>' +
+        '</div>';
+    } else {
+      var parts = [];
+      if (r.reasons && r.reasons.indexOf('limit') > -1) {
+        parts.push('The price of ' + item + ' (' + SW.money(r.price) + ') exceeds your current ' + period + ' limit (' + SW.money(r.limit_remaining) + ') and emergency buffer.');
+      }
+      if (r.reasons && r.reasons.indexOf('balance') > -1) {
+        parts.push('It is also greater than your main balance of ' + SW.money(r.balance) + '.');
+      } else if (r.reasons && r.reasons.indexOf('buffer') > -1) {
+        parts.push('It would dip past your spendable balance (' + SW.money(r.available) + ').');
+      }
+      html = '<div class="res bad">' +
+        '<div class="res-icon"><svg viewBox="0 0 52 52" aria-hidden="true"><path class="x" d="M16 16l20 20"/><path class="x" d="M36 16L16 36"/></svg></div>' +
+        '<h2>Not this time</h2>' +
+        '<p class="why">' + (parts.join(' ') || 'The item exceeds your allowed limits.') + '</p>' +
+        current + meters +
+        '<div class="res-actions"><button class="btn btn-violet" type="button" data-again>Try another price</button><a class="btn btn-line" href="profile.html">Back to profile</a></div>' +
+        '</div>';
+    }
+
+    out.innerHTML = html;
+    out.querySelectorAll('[data-count]').forEach(function (el) { SW.countUp(el, parseFloat(el.getAttribute('data-count')), 900); });
+    if (good) SW.confetti();
+
+    if (good) {
+      document.getElementById('confirmBuyBtn').addEventListener('click', function () {
+        var buyBtn = document.getElementById('confirmBuyBtn');
+        buyBtn.disabled = true;
+        buyBtn.textContent = 'Saving to database…';
+        SWApi.buy(r.item, r.price).then(function () {
+          window.location.href = 'profile.html';
+        }).catch(function () {
+          window.location.href = 'profile.html';
+        });
+      });
+    }
+
+    out.querySelector('[data-again]').addEventListener('click', function () {
+      form.item.focus();
+      form.item.select();
+    });
+    if (window.innerWidth <= 1000) out.scrollIntoView({ behavior: SW.reduce ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    banner.hidden = true;
+    var item = form.item.value.trim(), price = parseFloat(form.price.value);
+    var okI = fieldError('item', item ? '' : 'Enter the item you want to buy.');
+    var okP = fieldError('price', price > 0 ? '' : 'Enter a price above 0.');
+    if (!okI) { form.item.focus(); return; }
+    if (!okP) { form.price.focus(); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span> Checking…';
+    SWApi.checkPurchase(item, price).then(render).catch(function (err) {
+      banner.textContent = err.message;
+      banner.hidden = false;
+    }).then(function () {
+      btn.disabled = false;
+      btn.textContent = 'Check balance';
+    });
+  });
+});
+</script>
+</body>
+</html>

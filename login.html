@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log in – Spendwise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  /* Apply saved / system theme before first paint */
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('sw-theme'); } catch (e) {}
+    if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+<link rel="stylesheet" href="site.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+</head>
+<body>
+
+<div class="aurora-wrap">
+  <!-- Glowing Animated Background Blobs -->
+  <div class="aurora-blob blob-1"></div>
+  <div class="aurora-blob blob-2"></div>
+  <div class="aurora-blob blob-3"></div>
+
+  <header class="top">
+    <div class="wrap bar">
+      <a class="brand" href="index.html"><span class="mark">$</span>Spendwise</a>
+      <div class="actions push">
+        <button class="icon-btn" data-theme-toggle aria-label="Switch theme" title="Toggle Light/Dark Theme">
+          <span class="sunny">☀</span><span class="moon">☾</span>
+        </button>
+        <a class="btn btn-line-glass btn-sm" href="index.html">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          Home
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="auth">
+    <!-- Left 3D Perspective Visual Column -->
+    <aside class="auth-art" aria-hidden="true">
+      <div>
+        <h2>Good to see you again.</h2>
+        <p>Your balance, buffer and spending limits are synchronized live.</p>
+      </div>
+
+      <div class="card-scene" data-art></div>
+
+      <div class="art-features">
+        <div class="art-feature-item">
+          <div class="feat-icon">⚡</div>
+          <div>
+            <strong>Instant Verdicts</strong>
+            <span>Know instantly if a purchase fits your budget</span>
+          </div>
+        </div>
+        <div class="art-feature-item">
+          <div class="feat-icon">🛡️</div>
+          <div>
+            <strong>Smart Buffer Guard</strong>
+            <span>Keep your essential savings untouched</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right Glassmorphism Auth Form Container -->
+    <section class="auth-form">
+      <div class="form-card-glass">
+        <!-- Experimental 1-Click Quick Demo Pill Button -->
+        <button type="button" class="demo-pill" id="demoBtn" title="Auto-fill demo user credentials">
+          <span class="pulse-orb"></span>
+          <span>Try Demo Account (alex)</span>
+          <span style="opacity:0.75;font-weight:600;margin-left:.2rem">1-Click</span>
+        </button>
+
+        <h1>Log in <span style="font-size:0.85em;display:inline-block;animation:wave 2.2s infinite">✨</span></h1>
+        <p class="sub">Enter your username and password to open your profile.</p>
+
+        <div class="banner" id="banner" role="alert" hidden></div>
+
+        <form id="loginForm" class="stack" novalidate>
+          <div class="field">
+            <label for="username">Username</label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              </span>
+              <input class="input" id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="e.g. alex">
+            </div>
+            <span class="msg"></span>
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="pw input-wrap">
+              <span class="input-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </span>
+              <input class="input" id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••">
+              <button type="button" class="pw-toggle-btn" data-pw-toggle aria-pressed="false" aria-label="Toggle password visibility" title="Show or hide password">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <span class="msg"></span>
+          </div>
+
+          <button class="btn btn-glass-primary btn-lg block" id="submit" type="submit">
+            <span>Log in</span>
+            <svg class="btn-icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </button>
+        </form>
+
+        <div class="or">New to Spendwise?</div>
+        <a class="btn btn-line-glass block" href="signup.html">Create an account</a>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  var form = document.getElementById('loginForm');
+  var banner = document.getElementById('banner');
+  var btn = document.getElementById('submit');
+  var demoBtn = document.getElementById('demoBtn');
+
+  function setError(id, text) {
+    var field = document.getElementById(id).closest('.field');
+    field.classList.toggle('err', !!text);
+    field.querySelector('.msg').textContent = text || '';
+    return !text;
+  }
+
+  ['username', 'password'].forEach(function (id) {
+    var input = document.getElementById(id);
+    input.addEventListener('input', function () { setError(id, ''); banner.hidden = true; });
+    
+    /* Dynamic reaction on 3D Card when user interacts with form fields */
+    input.addEventListener('focus', function () {
+      var card3d = document.querySelector('.card-3d');
+      if (card3d) {
+        card3d.style.setProperty('--ry', id === 'password' ? '-24deg' : '-8deg');
+        card3d.style.setProperty('--rx', id === 'password' ? '14deg' : '4deg');
+      }
+    });
+  });
+
+  /* 1-Click Quick Demo Login */
+  demoBtn.addEventListener('click', function () {
+    form.username.value = 'alex';
+    form.password.value = 'demo123';
+    setError('username', '');
+    setError('password', '');
+    banner.hidden = true;
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+  });
+
+  /* Custom password visibility SVG toggle */
+  var pwToggle = document.querySelector('[data-pw-toggle]');
+  if (pwToggle) {
+    pwToggle.addEventListener('click', function () {
+      var input = document.getElementById('password');
+      var isVisible = input.type === 'text';
+      pwToggle.innerHTML = isVisible
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+    });
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    banner.hidden = true;
+    var u = form.username.value.trim(), p = form.password.value;
+    var okU = setError('username', u ? '' : 'Enter your username.');
+    var okP = setError('password', p ? '' : 'Enter your password.');
+    if (!okU) { form.username.focus(); return; }
+    if (!okP) { form.password.focus(); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span> <span>Logging in…</span>';
+    SWApi.login(u, p).then(function () {
+      window.location.href = 'profile.html';
+    }).catch(function (err) {
+      banner.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> ' + SW.esc(err.message);
+      banner.hidden = false;
+      btn.disabled = false;
+      btn.innerHTML = '<span>Log in</span> <svg class="btn-icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
+    });
+  });
+})();
+</script>
+</body>
+</html>
