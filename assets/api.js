@@ -7,11 +7,14 @@
 (function (w) {
   'use strict';
 
+  var isHttp = (w.location && w.location.protocol && w.location.protocol.indexOf('http') === 0);
   var host = (w.location && w.location.hostname) ? w.location.hostname : '127.0.0.1';
-  if (host === 'localhost') host = '127.0.0.1';
-  var API_BASE = (w.location && w.location.protocol && w.location.protocol.indexOf('http') === 0)
-    ? w.location.protocol + '//' + host + ':5001/api'
-    : 'http://127.0.0.1:5001/api';
+  var isLocal = (host === 'localhost' || host === '127.0.0.1');
+  var API_BASE = (isHttp && !isLocal)
+    ? '/api'
+    : (isHttp && isLocal
+        ? w.location.protocol + '//' + host + ':5001/api'
+        : 'http://127.0.0.1:5001/api');
 
   var USERS_KEY = 'sw-users';
   var SESSION_KEY = 'sw-session';
