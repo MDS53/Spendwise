@@ -237,7 +237,7 @@ class FinanceService:
         public_user = UserModel.to_public_dict(user_doc)
         result = {
             "message": "Item purchased successfully!",
-            "purchased_item": item_doc,
+            "purchased_item": ItemModel.to_clean_dict(item_doc),
             "user": public_user,
             "decision": decision,
             "used_emergency_buffer": used_emergency_buffer,
