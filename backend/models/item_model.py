@@ -67,6 +67,20 @@ class ItemModel:
         col.insert_one(item_doc)
         return True
 
+    @staticmethod
+    def to_clean_dict(doc: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert raw MongoDB item document into a clean, JSON-serializable dictionary."""
+        if not doc:
+            return {}
+        return {
+            "item_id": doc.get("item_id", ""),
+            "item": doc.get("item", ""),
+            "price": round_money(doc.get("price", 0.0)),
+            "used_emergency_buffer": doc.get("used_emergency_buffer", False),
+            "buffer_amount_used": round_money(doc.get("buffer_amount_used", 0.0)),
+            "created_at": doc.get("created_at", ""),
+        }
+
     @classmethod
     def get_items_by_username(cls, username: str, limit: int = 50) -> List[Dict[str, Any]]:
         """
@@ -88,18 +102,7 @@ class ItemModel:
         if not raw_items:
             raw_items = col.find({"username": username})
 
-        clean_list = []
-        for doc in raw_items:
-            clean_list.append(
-                {
-                    "item_id": doc.get("item_id", ""),
-                    "item": doc.get("item", ""),
-                    "price": round_money(doc.get("price", 0.0)),
-                    "used_emergency_buffer": doc.get("used_emergency_buffer", False),
-                    "buffer_amount_used": round_money(doc.get("buffer_amount_used", 0.0)),
-                    "created_at": doc.get("created_at", ""),
-                }
-            )
+        clean_list = [cls.to_clean_dict(doc) for doc in raw_items]
 
         # Sort by creation date descending
         clean_list.sort(key=lambda x: x.get("created_at", ""), reverse=True)
