@@ -207,7 +207,126 @@ class EmailService:
                 },
             }, None
 
-        # 1. Attempt HTTPS Delivery via Resend API if API Key is configured
+        # 1. Attempt HTTPS Delivery via Mailtrap Email API if MAILTRAP_TOKEN is configured (Instant Google 1-click signup, zero friction!)
+        mailtrap_token = getattr(Config, "MAILTRAP_TOKEN", "") or os.getenv("MAILTRAP_TOKEN", "")
+        if mailtrap_token:
+            try:
+                import json
+                import urllib.request
+
+                url = "https://send.api.mailtrap.io/api/send"
+                headers = {
+                    "Authorization": f"Bearer {mailtrap_token}",
+                    "Content-Type": "application/json",
+                }
+                from_email = getattr(Config, "EMAIL_FROM", "") or "mailtrap@demomailtrap.com"
+                if "demomailtrap.com" not in from_email and "mailtrap" not in from_email:
+                    from_email = "mailtrap@demomailtrap.com"
+
+                payload = {
+                    "from": {"email": from_email, "name": "Spendwise"},
+                    "to": [{"email": to_email}],
+                    "subject": subject,
+                    "html": report["html_body"],
+                    "text": report["text_body"],
+                }
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers=headers,
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    mt_data = json.loads(resp.read().decode("utf-8"))
+                    logger.info(f"Email delivered via Mailtrap API to {to_email}: {mt_data}")
+                    return True, {
+                        "status": "sent",
+                        "message": f"Email report delivered to {to_email}!",
+                        "to": to_email,
+                    }, None
+            except Exception as mt_err:
+                logger.warning(f"Mailtrap HTTP API dispatch failed ({mt_err}). Trying fallbacks...")
+
+        # 2. Attempt HTTPS Delivery via SendGrid API if SENDGRID_API_KEY is configured
+        sendgrid_key = getattr(Config, "SENDGRID_API_KEY", "") or os.getenv("SENDGRID_API_KEY", "")
+        if sendgrid_key:
+            try:
+                import json
+                import urllib.request
+
+                url = "https://api.sendgrid.com/v3/mail/send"
+                headers = {
+                    "Authorization": f"Bearer {sendgrid_key}",
+                    "Content-Type": "application/json",
+                }
+                sender_email = getattr(Config, "SMTP_USER", "") or "no-reply@spendwise.app"
+                if "<" in sender_email and ">" in sender_email:
+                    sender_email = sender_email.split("<")[1].split(">")[0].strip()
+
+                payload = {
+                    "personalizations": [{"to": [{"email": to_email}]}],
+                    "from": {"email": sender_email, "name": "Spendwise"},
+                    "subject": subject,
+                    "content": [{"type": "text/html", "value": report["html_body"]}],
+                }
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers=headers,
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    logger.info(f"Email delivered via SendGrid API to {to_email}")
+                    return True, {
+                        "status": "sent",
+                        "message": f"Email report delivered to {to_email}!",
+                        "to": to_email,
+                    }, None
+            except Exception as sg_err:
+                logger.warning(f"SendGrid HTTP API dispatch failed ({sg_err}). Trying fallbacks...")
+
+        # 2. Attempt HTTPS Delivery via Brevo API if BREVO_API_KEY is configured
+        brevo_key = getattr(Config, "BREVO_API_KEY", "") or os.getenv("BREVO_API_KEY", "")
+        if brevo_key:
+            try:
+                import json
+                import urllib.request
+
+                url = "https://api.brevo.com/v3/smtp/email"
+                headers = {
+                    "api-key": brevo_key,
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                }
+                sender_email = getattr(Config, "SMTP_USER", "") or "no-reply@spendwise.app"
+                if "<" in sender_email and ">" in sender_email:
+                    sender_email = sender_email.split("<")[1].split(">")[0].strip()
+
+                payload = {
+                    "sender": {"name": "Spendwise", "email": sender_email},
+                    "to": [{"email": to_email}],
+                    "subject": subject,
+                    "htmlContent": report["html_body"],
+                    "textContent": report["text_body"],
+                }
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers=headers,
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    brevo_data = json.loads(resp.read().decode("utf-8"))
+                    logger.info(f"Email delivered via Brevo API to {to_email}: {brevo_data}")
+                    return True, {
+                        "status": "sent",
+                        "message": f"Email report delivered to {to_email}!",
+                        "to": to_email,
+                    }, None
+            except Exception as brevo_err:
+                logger.warning(f"Brevo HTTP API dispatch failed ({brevo_err}). Trying fallbacks...")
+
+        # 2. Attempt HTTPS Delivery via Resend API if API Key is configured
         resend_key = getattr(Config, "RESEND_API_KEY", "") or os.getenv("RESEND_API_KEY", "")
         if resend_key:
             try:
