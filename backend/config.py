@@ -36,18 +36,19 @@ class Config:
     FLASK_HOST = os.getenv("FLASK_HOST", "0.0.0.0")
 
     # Email Settings
+    RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
     SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
     SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
     SMTP_USER = os.getenv("SMTP_USER", "")
     SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-    EMAIL_FROM = os.getenv("EMAIL_FROM", "Spendwise <no-reply@spendwise.app>")
+    EMAIL_FROM = os.getenv("EMAIL_FROM", "Spendwise <onboarding@resend.dev>")
 
     @classmethod
     def is_smtp_configured(cls) -> bool:
         """
-        Check if SMTP credentials are fully provided in environment variables.
+        Check if email service credentials (Resend API Key or SMTP credentials) are provided.
 
         Returns:
-            bool: True if SMTP_USER and SMTP_PASSWORD are non-empty, False otherwise.
+            bool: True if RESEND_API_KEY or (SMTP_USER and SMTP_PASSWORD) are set.
         """
-        return bool(cls.SMTP_USER and cls.SMTP_PASSWORD)
+        return bool(cls.RESEND_API_KEY or (cls.SMTP_USER and cls.SMTP_PASSWORD))
