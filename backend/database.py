@@ -47,14 +47,28 @@ class DatabaseManager:
 
         try:
             logger.info(f"Connecting to MongoDB database at URI: {mongo_uri[:30]}...")
-            cls._client = MongoClient(mongo_uri, serverSelectionTimeoutMS=2500)
+
+            client_kwargs = {"serverSelectionTimeoutMS": 10000}
+            try:
+                import certifi
+                client_kwargs["tlsCAFile"] = certifi.where()
+            except ImportError:
+                pass
+
+            cls._client = MongoClient(mongo_uri, **client_kwargs)
             # Execute quick server ping to test connectivity
             cls._client.admin.command("ping")
             cls._db = cls._client[db_name]
             cls._is_mock = False
-            logger.info(f"Successfully connected to MongoDB database: '{db_name}'!")
+            logger.info(f"Successfully connected to live MongoDB database: '{db_name}'!")
             cls._create_indexes()
         except (ConnectionFailure, ServerSelectionTimeoutError, Exception) as e:
+            err_msg = str(e)
+            if "TLSV1_ALERT_INTERNAL_ERROR" in err_msg or "SSL handshake failed" in err_msg:
+                logger.error(
+                    "MongoDB Atlas SSL handshake failed. MongoDB Atlas IP Access List update is propagating (takes 1-2 mins), "
+                    "or '0.0.0.0/0' is missing in MongoDB Atlas -> Security -> Network Access."
+                )
             logger.warning(
                 f"Could not connect to live MongoDB instance ({e}). "
                 f"Using fast In-Memory fallback database for development."
