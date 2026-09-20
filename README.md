@@ -242,6 +242,7 @@ flowchart TD
 
 </details>
 
+
 ---
 
 ## 📊 Summary Matrix: External vs Internal
@@ -267,3 +268,12 @@ flowchart TD
 
 > [!TIP]
 > **Zero-Crash Email Fallback**: If all external email APIs are unavailable, Spendwise gracefully compiles your financial report preview without throwing 500 server errors.
+
+Application Demo :
+
+
+https://github.com/user-attachments/assets/77f84ec9-0fdb-4755-8a91-9ad43f9de0d9
+
+
+
+
