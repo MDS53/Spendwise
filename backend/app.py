@@ -9,7 +9,7 @@ and periodic email reports.
 import sys
 import os
 import logging
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 # Add root directory to sys.path for clean package imports
@@ -37,7 +37,21 @@ def create_app() -> Flask:
     Returns:
         Flask: Initialized Flask application instance.
     """
-    app = Flask(__name__, static_folder="../", static_url_path="")
+    # Locate static folder dynamically by finding index.html
+    candidate_folders = [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..")),
+        os.path.dirname(__file__),
+        os.getcwd(),
+    ]
+    root_folder = candidate_folders[0]
+    for folder in candidate_folders:
+        if os.path.isfile(os.path.join(folder, "index.html")):
+            root_folder = folder
+            break
+
+    app = Flask(__name__, static_folder=None)
+    app.static_folder = root_folder
+    logger.info(f"Spendwise Flask static folder configured at: {app.static_folder}")
     app.config["SECRET_KEY"] = Config.SECRET_KEY
 
     # Enable CORS for all cross-origin requests from frontend
@@ -79,6 +93,38 @@ def create_app() -> Flask:
                 "smtp_configured": Config.is_smtp_configured(),
             }
         ), 200
+
+    @app.route("/", methods=["GET"])
+    def serve_root():
+        """Serve frontend index.html on root route."""
+        return send_from_directory(app.static_folder, "index.html")
+
+    @app.route("/<path:path>", methods=["GET"])
+    def serve_static(path):
+        """
+        Serve static frontend files (HTML, JS, CSS, assets) with route fallbacks.
+        Handles paths like /index, /index.html, /login, /profile, /site.css, /api.js, assets/logo.png.
+        """
+        if path.startswith("api/"):
+            return jsonify({"error": "Endpoint not found."}), 404
+
+        full_path = os.path.join(app.static_folder, path)
+
+        # Check direct file existence (e.g. index.html, site.css, assets/...)
+        if os.path.isfile(full_path):
+            return send_from_directory(app.static_folder, path)
+
+        # Check html extension fallback (e.g. /index -> index.html, /login -> login.html)
+        html_path = f"{path}.html"
+        full_html_path = os.path.join(app.static_folder, html_path)
+        if os.path.isfile(full_html_path):
+            return send_from_directory(app.static_folder, html_path)
+
+        # Fallback to index.html for frontend navigation
+        if os.path.isfile(os.path.join(app.static_folder, "index.html")):
+            return send_from_directory(app.static_folder, "index.html")
+
+        return jsonify({"error": "Endpoint not found."}), 404
 
     @app.errorhandler(404)
     def not_found_handler(e):
