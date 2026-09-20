@@ -193,7 +193,7 @@ class EmailService:
 
         if not Config.is_smtp_configured():
             logger.info(
-                f"[MOCK EMAIL MODE] SMTP credentials not set. Report generated successfully for '{to_email}'."
+                f"[MOCK EMAIL MODE] Email credentials not set. Report generated successfully for '{to_email}'."
             )
             return True, {
                 "status": "simulated",
@@ -205,6 +205,42 @@ class EmailService:
                     "total_spent": report["total_spent"],
                 },
             }, None
+
+        # 1. Attempt HTTPS Delivery via Resend API if API Key is configured
+        if Config.RESEND_API_KEY:
+            try:
+                import json
+                import urllib.request
+
+                url = "https://api.resend.com/emails"
+                headers = {
+                    "Authorization": f"Bearer {Config.RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                }
+                from_email = Config.EMAIL_FROM if "resend" in Config.EMAIL_FROM.lower() or "onboarding@resend.dev" in Config.EMAIL_FROM else "Spendwise <onboarding@resend.dev>"
+                payload = {
+                    "from": from_email,
+                    "to": [to_email],
+                    "subject": subject,
+                    "html": report["html_body"],
+                    "text": report["text_body"],
+                }
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers=headers,
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    resend_data = json.loads(resp.read().decode("utf-8"))
+                    logger.info(f"Email delivered via Resend API to {to_email}: {resend_data}")
+                    return True, {
+                        "status": "sent",
+                        "message": f"Email report delivered to {to_email}!",
+                        "to": to_email,
+                    }, None
+            except Exception as resend_err:
+                logger.warning(f"Resend HTTP API dispatch failed ({resend_err}). Falling back to SMTP...")
 
         try:
             msg = MIMEMultipart("alternative")
